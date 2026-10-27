@@ -1,5 +1,6 @@
 import { ArrowUpRight, Heart, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import { useShortlist } from "../context/useShortlist.js";
 
 function CreatorCard({ creator, matchScore }) {
@@ -41,7 +42,14 @@ function CreatorCard({ creator, matchScore }) {
             : `Add ${creator.name} to shortlist`
         }
         aria-pressed={isSaved}
-        onClick={() => toggleCreator(creator._id)}
+        onClick={() => {
+          toggleCreator(creator._id);
+          toast.success(
+            isSaved
+              ? `${creator.name} removed from your shortlist.`
+              : `${creator.name} added to your shortlist.`,
+          );
+        }}
       >
         <Heart size={17} fill={isSaved ? "currentColor" : "none"} />
       </button>

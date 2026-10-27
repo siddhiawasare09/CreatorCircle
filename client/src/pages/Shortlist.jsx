@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Heart, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
 import CreatorCard from "../components/CreatorCard.jsx";
+import { CreatorGridSkeleton } from "../components/LoadingSkeletons.jsx";
 import { useShortlist } from "../context/useShortlist.js";
 import api from "../services/api.js";
 
 function Shortlist() {
   const { creatorIds, removeCreator } = useShortlist();
   const [creators, setCreators] = useState([]);
+  const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
@@ -47,11 +50,7 @@ function Shortlist() {
         <p>Keep the creators you’re considering close at hand.</p>
       </div>
       {isLoading && (
-        <div className="creator-skeleton-grid" aria-label="Loading shortlist">
-          <div />
-          <div />
-          <div />
-        </div>
+        <CreatorGridSkeleton />
       )}
       {error && (
         <div className="form-alert" role="alert">
@@ -67,6 +66,11 @@ function Shortlist() {
           >
             Retry
           </button>
+        </div>
+      )}
+      {feedback && (
+        <div className="form-alert success" role="status">
+          {feedback}
         </div>
       )}
       {!isLoading && !error && shortlisted.length === 0 && (
@@ -89,10 +93,21 @@ function Shortlist() {
               <button
                 className="shortlist-remove"
                 type="button"
-                onClick={() => removeCreator(creator._id)}
+                onClick={() => {
+                  removeCreator(creator._id);
+                  setFeedback(`${creator.name} removed from your shortlist.`);
+                  toast.success(`${creator.name} removed from your shortlist.`);
+                }}
               >
                 <Trash2 size={14} /> Remove from shortlist
               </button>
+              <Link
+                className="shortlist-inquiry-link"
+                to={`/creators/${creator._id}`}
+                state={{ openInquiry: true }}
+              >
+                Send an inquiry
+              </Link>
             </div>
           ))}
         </div>

@@ -98,7 +98,13 @@ function Register() {
               type="password"
               autoComplete="new-password"
               placeholder="Create a password"
-              {...register("password", { required: "Create a password." })}
+              {...register("password", {
+                required: "Create a password.",
+                minLength: {
+                  value: 8,
+                  message: "Password must be at least 8 characters long.",
+                },
+              })}
             />
             {errors.password && (
               <span className="field-error">{errors.password.message}</span>

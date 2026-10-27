@@ -1,9 +1,19 @@
 import { Router } from "express";
-import { createInquiry } from "../controllers/inquiryController.js";
-import optionalAuthMiddleware from "../middleware/optionalAuthMiddleware.js";
+import {
+  createInquiry,
+  addInquiryMessage,
+  getCustomerInquiries,
+  getCreatorInquiries,
+  updateInquiryStatus,
+} from "../controllers/inquiryController.js";
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = Router();
 
-router.post("/", optionalAuthMiddleware, createInquiry);
+router.post("/", authMiddleware, createInquiry);
+router.get("/received", authMiddleware, getCreatorInquiries);
+router.get("/mine", authMiddleware, getCustomerInquiries);
+router.post("/:id/messages", authMiddleware, addInquiryMessage);
+router.patch("/:id/status", authMiddleware, updateInquiryStatus);
 
 export default router;

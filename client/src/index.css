@@ -142,6 +142,28 @@ code {
   -webkit-font-smoothing: antialiased;
 }
 
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  color: #e6e9e4;
+  background: #171b18;
+  --text: #c1c9c1;
+  --text-h: #f0f3ed;
+  --bg: #171b18;
+  --border: #3a443c;
+  --code-bg: #222a24;
+  --accent: #a7d2af;
+  --accent-bg: #25372a;
+  --accent-border: #8dbf97;
+  --green: #a7d2af;
+  --green-dark: #c3e3c9;
+  --lime: #d6f36a;
+  --coral: #ef947e;
+  --muted: #a4afa6;
+  --paper: #171b18;
+  --line: #3a443c;
+  --shadow: 0 20px 55px rgb(0 0 0 / 35%);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -149,6 +171,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  background: var(--paper);
+  color: var(--text-h);
 }
 button,
 input {

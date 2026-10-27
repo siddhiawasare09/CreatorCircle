@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { AnimatePresence, m } from "framer-motion";
 import {
   ArrowLeft,
   ExternalLink,
@@ -8,25 +9,39 @@ import {
   Send,
   Trash2,
 } from "lucide-react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
+import PostCard from "../components/PostCard.jsx";
+import { PortfolioGridSkeleton } from "../components/LoadingSkeletons.jsx";
 import { useAuth } from "../context/useAuth.js";
 import { useShortlist } from "../context/useShortlist.js";
 import api from "../services/api.js";
 
 function CreatorDetails() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { creatorIds, toggleCreator } = useShortlist();
   const [creator, setCreator] = useState(null);
+  const [creatorLoadedForId, setCreatorLoadedForId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [retryKey, setRetryKey] = useState(0);
+  const [posts, setPosts] = useState([]);
+  const [postsCreatorId, setPostsCreatorId] = useState(null);
+  const [postsError, setPostsError] = useState("");
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [postsRetryKey, setPostsRetryKey] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showInquiry, setShowInquiry] = useState(false);
+  const [showInquiry, setShowInquiry] = useState(
+    () => Boolean(location.state?.openInquiry),
+  );
+  const [shortlistFeedback, setShortlistFeedback] = useState("");
   const [inquiry, setInquiry] = useState({
     name: user?.name || "",
     email: user?.email || "",
+    subject: "",
     message: "",
   });
   const [inquiryError, setInquiryError] = useState("");
@@ -37,6 +52,7 @@ function CreatorDetails() {
   const isOwner = Boolean(
     user?.id && ownerId && String(user.id) === String(ownerId),
   );
+  const canSendInquiry = !isOwner && user?.role === "customer";
   const isSaved = creatorIds.includes(id);
 
   useEffect(() => {
@@ -45,10 +61,19 @@ function CreatorDetails() {
     api
       .get(`/creators/${id}`)
       .then((response) => {
-        if (active) setCreator(response.data.creator);
+        if (!response.data.creator) {
+          throw new Error("Creator response did not include a profile");
+        }
+        if (active) {
+          setCreator(response.data.creator);
+          setCreatorLoadedForId(id);
+          setError("");
+        }
       })
       .catch((requestError) => {
         if (active) {
+          setCreator(null);
+          setCreatorLoadedForId(id);
           setError(
             requestError.response?.status === 404
               ? "Creator profile not found."
@@ -65,6 +90,44 @@ function CreatorDetails() {
       active = false;
     };
   }, [id, retryKey]);
+  const isLoadingCurrentCreator =
+    isLoading || creatorLoadedForId !== id;
+
+  useEffect(() => {
+    if (!creator || String(creator._id) !== id) return undefined;
+
+    let active = true;
+    api
+      .get(`/creators/${id}/posts`)
+      .then((response) => {
+        if (!Array.isArray(response.data.posts)) {
+          throw new Error("Portfolio response did not include a post list");
+        }
+        if (active) {
+          setPosts(response.data.posts);
+          setPostsCreatorId(id);
+          setPostsError("");
+        }
+      })
+      .catch((requestError) => {
+        if (active) {
+          setPostsCreatorId(id);
+          setPostsError(
+            requestError.response?.data?.message ||
+              requestError.message ||
+              "Unable to load this creator’s portfolio.",
+          );
+        }
+      })
+      .finally(() => {
+        if (active) setIsLoadingPosts(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [creator, id, postsRetryKey]);
+  const isLoadingCurrentPosts = isLoadingPosts || postsCreatorId !== id;
 
   const deleteProfile = async () => {
     const confirmed = window.confirm(
@@ -103,9 +166,18 @@ function CreatorDetails() {
         ...inquiry,
         creator: id,
       });
-      setInquirySuccess(response.data.message || "Your inquiry was sent.");
-      setInquiry((current) => ({ ...current, message: "" }));
+      setInquirySuccess(response.data.message || "Inquiry sent successfully.");
+      toast.success("Inquiry sent successfully.");
+      setInquiry((current) => ({
+        ...current,
+        subject: "",
+        message: "",
+      }));
     } catch (requestError) {
+      toast.error(
+        requestError.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
       setInquiryError(
         requestError.response?.data?.message ||
           "Something went wrong. Please try again.",
@@ -128,7 +200,7 @@ function CreatorDetails() {
       <Link className="creator-back-link" to="/creators">
         <ArrowLeft size={16} /> Back to creators
       </Link>
-      {isLoading && (
+      {isLoadingCurrentCreator && (
         <div
           className="creator-detail-skeleton"
           role="status"
@@ -140,7 +212,7 @@ function CreatorDetails() {
           <span />
         </div>
       )}
-      {error && !isLoading && (
+      {error && !isLoadingCurrentCreator && (
         <div className="form-alert" role="alert">
           {error}
           <button
@@ -152,8 +224,14 @@ function CreatorDetails() {
           </button>
         </div>
       )}
-      {creator && !isLoading && (
-        <article className="creator-details-panel">
+      {creator && String(creator._id) === id && !isLoadingCurrentCreator && (
+        <m.article
+          className="creator-details-panel"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28, ease: "easeOut" }}
+          layout
+        >
           <div className="creator-details-heading">
             {creator.profileImage ? (
               <img
@@ -188,12 +266,23 @@ function CreatorDetails() {
                 isSaved ? "Remove from shortlist" : "Add to shortlist"
               }
               aria-pressed={isSaved}
-              onClick={() => toggleCreator(id)}
+              onClick={() => {
+                toggleCreator(id);
+                const message = isSaved
+                  ? "Creator removed from shortlist."
+                  : "Creator added to shortlist.";
+                setShortlistFeedback(message);
+                toast.success(
+                  isSaved
+                    ? `${creator.name} removed from your shortlist.`
+                    : `${creator.name} added to your shortlist.`,
+                );
+              }}
             >
               <Heart size={17} fill={isSaved ? "currentColor" : "none"} />
               {isSaved ? "Saved" : "Shortlist"}
             </button>
-            {!isOwner && (
+            {canSendInquiry && (
               <button
                 className="button-primary inquiry-open-button"
                 type="button"
@@ -202,8 +291,23 @@ function CreatorDetails() {
                 <Send size={15} /> Send Inquiry
               </button>
             )}
+            {!user && !isOwner && (
+              <Link
+                className="button-primary inquiry-open-button"
+                to="/login"
+                state={{ message: "Log in to start a collaboration inquiry." }}
+              >
+                <Send size={15} /> Log in to inquire
+              </Link>
+            )}
           </div>
-          {showInquiry && !isOwner && (
+          {shortlistFeedback && (
+            <div className="form-alert success shortlist-feedback" role="status">
+              {shortlistFeedback}{" "}
+              <Link to="/shortlist">View My Shortlist</Link>
+            </div>
+          )}
+          {showInquiry && canSendInquiry && (
             <form className="inquiry-form" onSubmit={submitInquiry}>
               <h2>Send an inquiry</h2>
               {inquiryError && (
@@ -213,10 +317,22 @@ function CreatorDetails() {
               )}
               {inquirySuccess && (
                 <div className="form-alert success" role="status">
-                  {inquirySuccess}
+                  {inquirySuccess}{" "}
+                  <Link to="/inquiries">View your conversations</Link>
                 </div>
               )}
               <div className="inquiry-fields">
+                <label className="inquiry-message-field">
+                  Subject
+                  <input
+                    required
+                    maxLength={120}
+                    value={inquiry.subject}
+                    onChange={(event) =>
+                      setInquiry({ ...inquiry, subject: event.target.value })
+                    }
+                  />
+                </label>
                 <label>
                   Name
                   <input
@@ -242,6 +358,7 @@ function CreatorDetails() {
                   Message
                   <textarea
                     required
+                    maxLength={1000}
                     rows="4"
                     value={inquiry.message}
                     onChange={(event) =>
@@ -282,6 +399,54 @@ function CreatorDetails() {
             <h2>About</h2>
             <p>{creator.bio}</p>
           </section>
+          <section className="creator-details-section creator-portfolio-section">
+            <div className="post-section-heading">
+              <div>
+                <span className="eyebrow">Selected projects</span>
+                <h2>Portfolio</h2>
+              </div>
+            </div>
+            {isLoadingCurrentPosts ? (
+              <PortfolioGridSkeleton />
+            ) : postsError ? (
+              <div className="form-alert" role="alert">
+                {postsError}
+                <button
+                  className="inline-retry"
+                  type="button"
+                  onClick={() => {
+                    setIsLoadingPosts(true);
+                    setPostsError("");
+                    setPostsRetryKey((key) => key + 1);
+                  }}
+                >
+                  Retry
+                </button>
+              </div>
+            ) : posts.length === 0 ? (
+              <div className="post-empty-state">
+                <h3>No portfolio posts yet</h3>
+                <p>This creator’s work will appear here when they share it.</p>
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                <m.div className="post-grid" layout>
+                  {posts.map((post) => (
+                    <m.div
+                      key={post._id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <PostCard post={post} />
+                    </m.div>
+                  ))}
+                </m.div>
+              </AnimatePresence>
+            )}
+          </section>
           {creator.skills?.length > 0 && (
             <section className="creator-details-section">
               <h2>Skills</h2>
@@ -321,7 +486,7 @@ function CreatorDetails() {
               </div>
             </section>
           )}
-        </article>
+        </m.article>
       )}
     </section>
   );

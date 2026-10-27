@@ -27,8 +27,15 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const updateUser = (updates) => {
+    if (!user) return
+    const nextUser = { ...user, ...updates }
+    localStorage.setItem('creatorcircle_user', JSON.stringify(nextUser))
+    setUser(nextUser)
+  }
+
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )

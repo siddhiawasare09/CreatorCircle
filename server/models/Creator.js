@@ -34,6 +34,12 @@ const creatorSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  rateCard: {
+    type: String,
+    default: "",
+    trim: true,
+    maxlength: 120,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

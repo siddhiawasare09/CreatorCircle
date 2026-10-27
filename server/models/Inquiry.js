@@ -19,9 +19,42 @@ const inquirySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  subject: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 120,
+    default: "Collaboration inquiry",
+  },
   message: {
     type: String,
     required: true,
+    trim: true,
+    maxlength: 1000,
+  },
+  messages: [
+    {
+      sender: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      text: {
+        type: String,
+        required: true,
+        trim: true,
+        maxlength: 1000,
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+    },
+  ],
+  status: {
+    type: String,
+    enum: ["pending", "accepted", "declined"],
+    default: "pending",
   },
   createdAt: {
     type: Date,

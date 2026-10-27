@@ -98,6 +98,9 @@ function Login() {
               <span className="field-error">{errors.password.message}</span>
             )}
           </div>
+          <p className="auth-switch">
+            <Link to="/forgot-password">Forgot password?</Link>
+          </p>
           <button
             className="button-primary submit-button"
             type="submit"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { RotateCcw, Sparkles } from "lucide-react";
 import CreatorCard from "../components/CreatorCard.jsx";
+import { CreatorGridSkeleton } from "../components/LoadingSkeletons.jsx";
 import api from "../services/api.js";
 import {
   calculateMatchScore,
@@ -165,15 +166,7 @@ function CreatorMatch() {
       </form>
 
       {isLoading && (
-        <div
-          className="creator-skeleton-grid"
-          role="status"
-          aria-label="Loading creators"
-        >
-          <div />
-          <div />
-          <div />
-        </div>
+        <CreatorGridSkeleton />
       )}
       {error && (
         <div className="form-alert" role="alert">

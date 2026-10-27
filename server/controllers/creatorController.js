@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import Creator from "../models/Creator.js";
+import Post from "../models/Post.js";
 
 const isValidCreatorId = (id) => mongoose.isValidObjectId(id);
 
@@ -243,7 +244,7 @@ export const deleteCreator = async (req, res) => {
   }
 
   try {
-    const creator = await Creator.findOneAndDelete({
+    const creator = await Creator.findOne({
       _id: req.params.id,
       user: req.userId,
     });
@@ -254,6 +255,9 @@ export const deleteCreator = async (req, res) => {
         message: "Creator profile not found or you do not own it",
       });
     }
+
+    await Post.deleteMany({ creator: creator._id });
+    await creator.deleteOne();
 
     return res.status(200).json({
       success: true,

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 import CreatorCard from "../components/CreatorCard.jsx";
+import { CreatorGridSkeleton } from "../components/LoadingSkeletons.jsx";
 import api from "../services/api.js";
 
 function Creators() {
@@ -116,9 +117,7 @@ function Creators() {
         </select>
       </div>
       {isLoading && (
-        <div className="creator-skeleton-grid" role="status" aria-label="Loading creators">
-          <div /><div /><div />
-        </div>
+        <CreatorGridSkeleton />
       )}
       {error && (
         <div className="form-alert" role="alert">

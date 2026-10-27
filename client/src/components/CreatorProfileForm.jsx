@@ -1,6 +1,8 @@
-import { useEffect } from "react";
-import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowRight, LoaderCircle, Sparkles } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import api from "../services/api.js";
 
 const emptyValues = {
   name: "",
@@ -26,12 +28,49 @@ function CreatorProfileForm({
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm({ defaultValues: initialValues });
+  const [isGeneratingBio, setIsGeneratingBio] = useState(false);
 
   useEffect(() => {
     reset(initialValues);
   }, [initialValues, reset]);
+
+  const generateBio = async () => {
+    const values = getValues();
+    const category = String(values.category || "").trim();
+    const skills = String(values.skills || "")
+      .split(",")
+      .map((skill) => skill.trim())
+      .filter(Boolean);
+
+    if (!category) {
+      toast.error("Add a creator category before generating a bio.");
+      return;
+    }
+
+    setIsGeneratingBio(true);
+    try {
+      const response = await api.post("/ai/generate-bio", {
+        category,
+        skills,
+      });
+      setValue("bio", response.data.bio, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+      toast.success("AI bio suggestion added. Review it before saving.");
+    } catch (requestError) {
+      toast.error(
+        requestError.response?.data?.message ||
+          "Unable to generate a bio right now.",
+      );
+    } finally {
+      setIsGeneratingBio(false);
+    }
+  };
 
   const submitForm = (values) => {
     const skills = values.skills
@@ -100,7 +139,23 @@ function CreatorProfileForm({
           <span className="field-hint">Optional. Paste a publicly accessible image URL.</span>
         </div>
         <div className="form-field creator-form-wide">
-          <label htmlFor="creator-bio">Bio</label>
+          <div className="creator-bio-label-row">
+            <label htmlFor="creator-bio">Bio</label>
+            <button
+              className="button-outline ai-bio-button"
+              type="button"
+              onClick={generateBio}
+              disabled={isGeneratingBio}
+              aria-busy={isGeneratingBio}
+            >
+              {isGeneratingBio ? (
+                <LoaderCircle className="spin-animation" size={14} />
+              ) : (
+                <Sparkles size={14} />
+              )}
+              {isGeneratingBio ? "Generating…" : "Generate with AI"}
+            </button>
+          </div>
           <textarea
             id="creator-bio"
             rows="4"

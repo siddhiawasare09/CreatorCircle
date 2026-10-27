@@ -14,6 +14,7 @@ import {
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/useAuth.js";
 import CreatorCard from "../components/CreatorCard.jsx";
+import { CreatorGridSkeleton } from "../components/LoadingSkeletons.jsx";
 import api from "../services/api.js";
 
 function Home() {
@@ -178,7 +179,7 @@ function Home() {
           </div>
         )}
         {isLoadingCreators ? (
-          <div className="creator-skeleton-grid featured-skeleton" aria-label="Loading featured creators"><div /><div /><div /></div>
+          <CreatorGridSkeleton className="featured-skeleton" />
         ) : creatorError ? (
           <div className="featured-empty">
             <p>{creatorError}</p>

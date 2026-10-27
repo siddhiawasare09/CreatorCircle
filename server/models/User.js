@@ -25,6 +25,33 @@ const userSchema = new mongoose.Schema({
     enum: ["customer", "admin"],
     default: "customer",
   },
+  isSuspended: {
+    type: Boolean,
+    default: false,
+  },
+  notifications: {
+    proposalAccepted: {
+      type: Boolean,
+      default: true,
+    },
+    newMessages: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  theme: {
+    type: String,
+    enum: ["light", "dark"],
+    default: "light",
+  },
+  resetPasswordToken: {
+    type: String,
+    default: undefined,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: undefined,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
